@@ -5,7 +5,7 @@ import time
 import pygame
 from datetime import datetime
 
-# Constants
+# Константы
 FIELD_WIDTH = 10
 FIELD_HEIGHT = 20
 CELL_SIZE = 30
@@ -13,14 +13,15 @@ PREVIEW_SIZE = 5
 PREVIEW_CELL_SIZE = 30
 WHITE_CELL = "#ffffff"
 SHAPES = [
-    [[1, 1, 1, 1]],  # Stick
-    [[1, 1], [1, 1]],  # Square
-    [[1, 0, 0], [1, 1, 1]],  # L-shape
-    [[0, 0, 1], [1, 1, 1]],  # L-shape mirrored
-    [[1, 1, 0], [0, 1, 1]],  # Z-shape
-    [[0, 1, 1], [1, 1, 0]]  # Z-shape mirrored
+    [[1, 1, 1, 1]],  # Палка
+    [[1, 1], [1, 1]],  # Квадрат
+    [[1, 0, 0], [1, 1, 1]],  # L
+    [[0, 0, 1], [1, 1, 1]],  # L зеркальная
+    [[1, 1, 0], [0, 1, 1]],  # Z
+    [[0, 1, 1], [1, 1, 0]]  # Z зеркальная
 ]
 COLORS = ['cyan', 'purple', 'red', 'green', 'yellow', 'blue', 'orange']
+
 
 class Tetris:
     def __init__(self, master):
@@ -30,10 +31,12 @@ class Tetris:
         self.background_image = Image.open("img/fon2.png")
         self.master.resizable(False, False)
         self.background_photo = ImageTk.PhotoImage(self.background_image)
-        self.background_canvas = tk.Canvas(self.master, width=self.background_image.width, height=self.background_image.height)
+        self.background_canvas = tk.Canvas(self.master, width=self.background_image.width,
+                                           height=self.background_image.height)
         self.background_canvas.pack(fill="both", expand=True)
         self.background_canvas.create_image(0, 0, anchor="nw", image=self.background_photo)
-        self.start_game_button = tk.Button(self.background_canvas, text="Начать игру", command=self.start_game, font=("Arial", 20), bg="lightgray", fg="black")
+        self.start_game_button = tk.Button(self.background_canvas, text="Начать игру", command=self.start_game,
+                                           font=("Arial", 20), bg="lightgray", fg="black")
         self.start_game_button.pack(pady=200, padx=100)
         self.bottom_frame = tk.Frame(self.master)
         self.speed = 500
@@ -66,7 +69,7 @@ class Tetris:
                                     fill="red", font=("Helvetica", 40))
         else:
             self.remaining_time_label.config(
-                text=f"Оставшееся время: {remaining_time:.2f} сек")  # Обновляем текст на метке
+                text=f"Оставшееся время: {remaining_time:.2f} сек")
             self.remaining_time_id = self.master.after(100, self.update_remaining_time)
 
     def start_game(self, event=None):
@@ -80,14 +83,17 @@ class Tetris:
         self.game_frame = tk.Frame(self.frame, width=FIELD_WIDTH * CELL_SIZE, height=FIELD_HEIGHT * CELL_SIZE)
         self.game_frame.pack(side=tk.LEFT)
         self.game_frame.config(bg="black")
-        self.canvas = tk.Canvas(self.game_frame, width=FIELD_WIDTH * CELL_SIZE, height=FIELD_HEIGHT * CELL_SIZE, bg="white")
+        self.canvas = tk.Canvas(self.game_frame, width=FIELD_WIDTH * CELL_SIZE, height=FIELD_HEIGHT * CELL_SIZE,
+                                bg="white")
         self.canvas.pack()
 
         self.preview_frame = tk.Frame(self.frame)
-        self.preview_frame.place(x=FIELD_WIDTH * CELL_SIZE + 20, y=200, width=PREVIEW_SIZE * PREVIEW_CELL_SIZE, height=PREVIEW_SIZE * PREVIEW_CELL_SIZE)
+        self.preview_frame.place(x=FIELD_WIDTH * CELL_SIZE + 20, y=200, width=PREVIEW_SIZE * PREVIEW_CELL_SIZE,
+                                 height=PREVIEW_SIZE * PREVIEW_CELL_SIZE)
         self.preview_label = tk.Label(self.preview_frame, text="Следующая фигура:", font=("Helvetica", 11))
         self.preview_label.pack(side=tk.TOP, pady=5, padx=5)
-        self.preview_canvas = tk.Canvas(self.preview_frame, width=PREVIEW_SIZE * PREVIEW_CELL_SIZE, height=PREVIEW_SIZE * PREVIEW_CELL_SIZE, bg="white")
+        self.preview_canvas = tk.Canvas(self.preview_frame, width=PREVIEW_SIZE * PREVIEW_CELL_SIZE,
+                                        height=PREVIEW_SIZE * PREVIEW_CELL_SIZE, bg="white")
         self.preview_canvas.pack(padx=5, pady=5)
 
         self.game_over = False
@@ -101,11 +107,10 @@ class Tetris:
         self.restart_button.pack(side=tk.LEFT, padx=10)
         self.pause_button = tk.Button(self.bottom_frame, text="Пауза", command=self.pause_game)
         self.pause_button.pack(side=tk.RIGHT, padx=10)
-        self.time_label = tk.Label(self.frame, text="Итого времени: 0",font=("Helvetica", 20))
+        self.time_label = tk.Label(self.frame, text="Итого времени: 0", font=("Helvetica", 20))
         self.time_label.pack(side=tk.TOP, padx=10, pady=10)
-        self.score_label = tk.Label(self.bottom_frame, text="Счёт: 0",font=("Helvetica", 15))
+        self.score_label = tk.Label(self.bottom_frame, text="Счёт: 0", font=("Helvetica", 15))
         self.score_label.pack(side=tk.BOTTOM, padx=10, pady=10)
-
 
         self.init_game()
         self.load_high_scores()
@@ -120,63 +125,49 @@ class Tetris:
 
     def save_high_score(self):
         current_score = self.score
-        current_date = datetime.now().strftime("Y-m-d H:M:S")
+        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        high_scores_path = "high_scores.txt"
+        new_high_score = True
+
+        try:
+            with open(high_scores_path, "a+") as file:
+                file.seek(0)
+                existing_records = file.readlines()
+                for record in existing_records:
+                    score = int(record.split(", ")[0].split(": ")[1])
+                    if current_score <= score:
+                        new_high_score = False
+                        break
+
+                if new_high_score:
+                    file.write(f"Счёт: {current_score}, Дата: {current_date}\n")
+                    print(f"Новый рекорд сохранён: Счёт: {current_score}, Дата: {current_date}")  # Добавлен вывод в консоль
+        except FileNotFoundError:
+            with open(high_scores_path, "w") as file:
+                file.write(f"Счёт: {current_score}, Дата: {current_date}\n")
+                print(f"Новый рекорд сохранён: Счёт: {current_score}, Дата: {current_date}")  # Добавлен вывод в консоль
+
+    def load_high_scores(self):
         high_scores_path = "high_scores.txt"
         try:
             with open(high_scores_path, "r") as file:
-                existing_records = file.readlines()
-        except FileNotFoundError:
-            existing_records = []
-
-        with open(high_scores_path, "w") as file:
-            new_records = []
-            new_high_score = True
-
-            for record in existing_records:
-                score = int(record.split(", ")[0].split(": ")[1])
-                if current_score > score:
-                    new_records.append(f"рекорд: {current_score}, Date: {current_date}\n")
-                    new_high_score = False
-                else:
-                    new_records.append(record)
-
-            if new_high_score:
-                new_records.append(f"рекорд: {current_score}, Date: {current_date}\n")
-
-            file.writelines(new_records)
-
-    def load_high_scores(self):
-        try:
-            with open("high_scores.txt", "r") as file:
                 high_scores = file.readlines()
 
             if high_scores:
-                valid_scores = []  # Список для хранения допустимых счетов
-                for line in high_scores:
-                    try:
-                        # Проверяем, что строка имеет правильную структуру
-                        parts = line.strip().split(", ")
-                        score_part = parts[0].split(": ")
-                        score = int(score_part[1])  # Преобразуем счет в целое число
-                        valid_scores.append((score, line.strip()))  # Сохраняем корректные записи
-                    except (IndexError, ValueError):
-                        print(f"Пропускаем некорректную запись: {line.strip()}")
-
-                if valid_scores:
-                    # Ищем запись с максимальным счетом
-                    max_score_record = max(valid_scores, key=lambda x: x[0])
-                    self.max_score_label = tk.Label(self.frame, text=f"Максимальный {max_score_record[1]}")
-                    self.max_score_label.pack(side=tk.TOP, pady=10)
-                else:
-                    self.max_score_label = tk.Label(self.frame, text="Допустимые записи отсутствуют")
-                    self.max_score_label.pack(side=tk.TOP, pady=10)
-
+                max_score_record = max(high_scores, key=lambda x: int(x.split(", ")[0].split(": ")[1]))
+                max_score = int(max_score_record.split(", ")[0].split(": ")[1])
+                max_score_date = max_score_record.split(", ")[1].split(": ")[1].strip()
+                self.max_score_label = tk.Label(self.frame,
+                                                text=f"Максимальный рекорд: {max_score} (Дата: {max_score_date})",
+                                                font=("Helvetica", 15))
+                self.max_score_label.pack(side=tk.TOP, pady=10)
             else:
-                self.max_score_label = tk.Label(self.frame, text="Записи в файле рекордов отсутствуют")
+                self.max_score_label = tk.Label(self.frame, text="Записи в файле рекордов отсутствуют",
+                                                font=("Helvetica", 15))
                 self.max_score_label.pack(side=tk.TOP, pady=10)
 
         except FileNotFoundError:
-            self.max_score_label = tk.Label(self.frame, text="Файл рекордов не найден")
+            self.max_score_label = tk.Label(self.frame, text="Файл рекордов не найден", font=("Helvetica", 15))
             self.max_score_label.pack(side=tk.TOP, pady=10)
 
     def restart_game(self):
@@ -205,6 +196,7 @@ class Tetris:
         self.shape_position = (0, FIELD_WIDTH // 2 - len(self.shape[0]) // 2)
         if self.check_collision(self.shape_position, self.shape):
             self.game_over = True
+            self.save_high_score()  # Сохранение рекорда при окончании игры
             print("Игра окончена! Твой счёт:", self.score)
             self.canvas.create_text(FIELD_WIDTH * CELL_SIZE / 2, FIELD_HEIGHT * CELL_SIZE / 2, text="Game Over!",
                                     fill="red", font=("Helvetica", 40))
@@ -332,7 +324,7 @@ class Tetris:
     def play_background_music(self):
         pygame.mixer.init()
         pygame.mixer.music.load("background_music.wav")
-        pygame.mixer.music.play(-1)  # Циклическое воспроизведение
+        pygame.mixer.music.play(-1)  # Цикл
 
     def play_sound_effect(self, sound):
         pygame.mixer.init()
@@ -379,6 +371,7 @@ class Tetris:
         self.draw_shape()
         self.update_preview()
         self.update_time()
+
 
 if __name__ == "__main__":
     root = tk.Tk()
