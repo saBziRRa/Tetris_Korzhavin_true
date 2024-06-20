@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import simpledialog, messagebox
 from PIL import Image, ImageTk
 import random
 import time
@@ -6,6 +7,7 @@ import pygame
 from datetime import datetime
 
 # Константы
+GAME_TIME = 10
 FIELD_WIDTH = 10
 FIELD_HEIGHT = 20
 CELL_SIZE = 30
@@ -39,14 +41,35 @@ class Tetris:
                                            font=("Arial", 20), bg="lightgray", fg="black")
         self.start_game_button.pack(pady=200, padx=100)
         self.bottom_frame = tk.Frame(self.master)
+        self.start_time = None
         self.speed = 500
         self.line_clear_sound = pygame.mixer.Sound("sound/line_clear.wav")
         self.game_over_sound = pygame.mixer.Sound("sound/game_over.wav")
-        self.master.bind('<Key>', self.start_game)
+        self.time_up_sound = pygame.mixer.Sound("sound/times_up.wav")
         self.master.focus_set()
 
+        self.game_time = GAME_TIME
+
     def start_game(self):
-        pass
+        self.start_game_button.pack_forget()
+        self.background_canvas.pack_forget()
+        self.game_over = False
+        self.game_paused = False
+        self.next_shape = None
+        self.field = [[WHITE_CELL for _ in range(FIELD_WIDTH)] for _ in range(FIELD_HEIGHT)]
+        self.score = 0
+        self.start_time = time.time()
+
+        game_time_str = simpledialog.askstring("Время на игру", "Введите время на игру (в секундах):")
+        if game_time_str:
+            try:
+                self.game_time = int(game_time_str)
+            except ValueError:
+                messagebox.showerror("Ошибка",
+                                     "Некорректное значение времени. Будет использовано значение по умолчанию.")
+                self.game_time = GAME_TIME
+        else:
+            self.game_time = GAME_TIME
 
     def init_game(self):
         self.new_shape()
@@ -56,26 +79,27 @@ class Tetris:
         self.update_time()
 
     def show_remaining_time(self):
-        self.remaining_time_label = tk.Label(self.frame, text="Оставшееся время:")
+        self.remaining_time_label = tk.Label(self.frame, text=f"Оставшееся время: {self.game_time:.2f} сек",
+                                             font=("Helvetica", 15))
         self.remaining_time_label.pack(side=tk.TOP, pady=10)
-        self.update_remaining_time()
 
     def update_remaining_time(self):
-        remaining_time = 60 - (time.time() - self.start_time)
-        self.remaining_time_label.config(text=f"Оставшееся время: {remaining_time:.2f} сек")
-        if remaining_time <= 0:
-            self.game_over = True
-            self.canvas.create_text(FIELD_WIDTH * CELL_SIZE / 2, FIELD_HEIGHT * CELL_SIZE / 2, text="Time's up!",
-                                    fill="red", font=("Helvetica", 40))
-        else:
-            self.remaining_time_label.config(
-                text=f"Оставшееся время: {remaining_time:.2f} сек")
+        elapsed_time = time.time() - self.start_time
+        remaining_time = self.game_time - elapsed_time
+        if remaining_time > 0:
+            self.remaining_time_label.config(text=f"Оставшееся время: {remaining_time:.2f} сек")
             self.remaining_time_id = self.master.after(100, self.update_remaining_time)
+        else:
+            self.game_over = True
+            self.save_high_score()
+            self.time_up_sound.play()
+            self.canvas.create_text(FIELD_WIDTH * CELL_SIZE / 2, FIELD_HEIGHT * CELL_SIZE / 2, text="Время закончилось!",
+                                    fill="red", font=("Helvetica", 25))
+
 
     def start_game(self, event=None):
         self.start_game_button.pack_forget()
         self.background_canvas.pack_forget()
-        self.master.unbind('<Key>')
         self.frame = tk.Frame(self.master)
         self.frame.pack()
         self.bottom_frame = tk.Frame(self.frame)
@@ -112,7 +136,9 @@ class Tetris:
         self.score_label = tk.Label(self.bottom_frame, text="Счёт: 0", font=("Helvetica", 15))
         self.score_label.pack(side=tk.BOTTOM, padx=10, pady=10)
 
+        self.show_remaining_time()
         self.init_game()
+        self.play_background_music()
         self.load_high_scores()
         self.show_hints()
 
@@ -196,9 +222,9 @@ class Tetris:
         self.shape_position = (0, FIELD_WIDTH // 2 - len(self.shape[0]) // 2)
         if self.check_collision(self.shape_position, self.shape):
             self.game_over = True
-            self.save_high_score()  # Сохранение рекорда при окончании игры
+            self.save_high_score()
             print("Игра окончена! Твой счёт:", self.score)
-            self.canvas.create_text(FIELD_WIDTH * CELL_SIZE / 2, FIELD_HEIGHT * CELL_SIZE / 2, text="Game Over!",
+            self.canvas.create_text(FIELD_WIDTH * CELL_SIZE / 2, FIELD_HEIGHT * CELL_SIZE / 2, text="Конец игры!",
                                     fill="red", font=("Helvetica", 40))
         else:
             self.update()
@@ -228,21 +254,21 @@ class Tetris:
         canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="black")
 
     def move_left(self, event):
-        if not self.game_paused:
+        if not self.game_paused and not self.game_over:
             new_pos = (self.shape_position[0], self.shape_position[1] - 1)
             if not self.check_collision(new_pos, self.shape):
                 self.shape_position = new_pos
                 self.update()
 
     def move_right(self, event):
-        if not self.game_paused:
+        if not self.game_paused and not self.game_over:
             new_pos = (self.shape_position[0], self.shape_position[1] + 1)
             if not self.check_collision(new_pos, self.shape):
                 self.shape_position = new_pos
                 self.update()
 
     def move_down(self, event=None):
-        if not self.game_paused:
+        if not self.game_paused and not self.game_over:
             new_pos = (self.shape_position[0] + 1, self.shape_position[1])
             if self.check_collision(new_pos, self.shape):
                 self.lock_shape()
@@ -252,14 +278,14 @@ class Tetris:
                 self.update()
 
     def rotate(self, event):
-        if not self.game_paused:
+        if not self.game_paused and not self.game_over:
             rotated_shape = list(zip(*self.shape[::-1]))
             if not self.check_collision(self.shape_position, rotated_shape):
                 self.shape = rotated_shape
                 self.update()
 
     def drop_shape(self, event):
-        if not self.game_paused:
+        if not self.game_paused and not self.game_over:
             while not self.check_collision((self.shape_position[0] + 1, self.shape_position[1]), self.shape):
                 self.shape_position = (self.shape_position[0] + 1, self.shape_position[1])
                 self.update()
@@ -321,10 +347,11 @@ class Tetris:
         self.hint_label.pack(side=tk.BOTTOM, pady=10)
         self.update_hint()
 
-    def play_background_music(self):
+    def play_background_music(self,volume=0.03):
         pygame.mixer.init()
-        pygame.mixer.music.load("background_music.wav")
-        pygame.mixer.music.play(-1)  # Цикл
+        pygame.mixer.music.load("sound/background_music.wav")
+        pygame.mixer.music.set_volume(0.03)
+        pygame.mixer.music.play(-1)
 
     def play_sound_effect(self, sound):
         pygame.mixer.init()
@@ -332,6 +359,8 @@ class Tetris:
             sound_effect = pygame.mixer.Sound("sound/line_clear.wav")
         elif sound == "game_over":
             sound_effect = pygame.mixer.Sound("sound/game_over.wav")
+        elif sound == "times_up":
+            sound_effect = pygame.mixer.Sound("sound/times_up.wav")
         sound_effect.play()
 
     def update_hint(self):
@@ -348,6 +377,7 @@ class Tetris:
     def move_down_auto(self):
         if not self.game_over and not self.game_paused:
             self.move_down()
+            self.update_remaining_time()
             self.move_down_id = self.master.after(500, self.move_down_auto)
 
     def update_preview(self):
