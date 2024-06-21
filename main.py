@@ -7,7 +7,7 @@ import pygame
 from datetime import datetime
 
 # Константы
-GAME_TIME = 10
+GAME_TIME = 10   #В секундах
 FIELD_WIDTH = 10
 FIELD_HEIGHT = 20
 CELL_SIZE = 30
@@ -60,16 +60,7 @@ class Tetris:
         self.score = 0
         self.start_time = time.time()
 
-        game_time_str = simpledialog.askstring("Время на игру", "Введите время на игру (в секундах):")
-        if game_time_str:
-            try:
-                self.game_time = int(game_time_str)
-            except ValueError:
-                messagebox.showerror("Ошибка",
-                                     "Некорректное значение времени. Будет использовано значение по умолчанию.")
-                self.game_time = GAME_TIME
-        else:
-            self.game_time = GAME_TIME
+
 
     def init_game(self):
         self.new_shape()
@@ -167,11 +158,11 @@ class Tetris:
 
                 if new_high_score:
                     file.write(f"Счёт: {current_score}, Дата: {current_date}\n")
-                    print(f"Новый рекорд сохранён: Счёт: {current_score}, Дата: {current_date}")  # Добавлен вывод в консоль
+                    print(f"Новый рекорд сохранён: Счёт: {current_score}, Дата: {current_date}")
         except FileNotFoundError:
             with open(high_scores_path, "w") as file:
                 file.write(f"Счёт: {current_score}, Дата: {current_date}\n")
-                print(f"Новый рекорд сохранён: Счёт: {current_score}, Дата: {current_date}")  # Добавлен вывод в консоль
+                print(f"Новый рекорд сохранён: Счёт: {current_score}, Дата: {current_date}")
 
     def load_high_scores(self):
         high_scores_path = "high_scores.txt"
@@ -226,6 +217,9 @@ class Tetris:
             print("Игра окончена! Твой счёт:", self.score)
             self.canvas.create_text(FIELD_WIDTH * CELL_SIZE / 2, FIELD_HEIGHT * CELL_SIZE / 2, text="Конец игры!",
                                     fill="red", font=("Helvetica", 40))
+            self.game_over_sound.play()
+            self.master.update()
+            time.sleep(2)
         else:
             self.update()
             self.update_preview()
@@ -307,8 +301,7 @@ class Tetris:
                 if cell:
                     self.field[self.shape_position[0] + i][self.shape_position[1] + j] = self.color
         self.clear_lines()
-        if self.game_over:
-            self.game_over_sound.play()
+
 
     def clear_lines(self):
         cleared_lines = 0
