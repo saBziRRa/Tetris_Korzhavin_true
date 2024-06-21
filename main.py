@@ -40,6 +40,21 @@ class Tetris:
         self.start_game_button = tk.Button(self.background_canvas, text="Начать игру", command=self.start_game,
                                            font=("Arial", 20), bg="lightgray", fg="black")
         self.start_game_button.pack(pady=200, padx=100)
+        self.difficulty_frame = tk.Frame(self.background_canvas)
+        self.difficulty_frame.pack(pady=20)
+        self.easy_button = tk.Button(self.difficulty_frame, text="Легкий", command=lambda: self.set_difficulty("easy"),
+                                     font=("Arial", 15), bg="lightgreen", fg="black")
+        self.medium_button = tk.Button(self.difficulty_frame, text="Средний",
+                                       command=lambda: self.set_difficulty("medium"),
+                                       font=("Arial", 15), bg="yellow", fg="black")
+        self.hard_button = tk.Button(self.difficulty_frame, text="Сложный", command=lambda: self.set_difficulty("hard"),
+                                     font=("Arial", 15), bg="orange", fg="black")
+
+        self.easy_button.pack(side=tk.LEFT, padx=10)
+        self.medium_button.pack(side=tk.LEFT, padx=10)
+        self.hard_button.pack(side=tk.LEFT, padx=10)
+        self.difficulty = "easy"
+
         self.bottom_frame = tk.Frame(self.master)
         self.start_time = None
         self.speed = 500
@@ -47,20 +62,19 @@ class Tetris:
         self.game_over_sound = pygame.mixer.Sound("sound/game_over.wav")
         self.time_up_sound = pygame.mixer.Sound("sound/times_up.wav")
         self.master.focus_set()
-
         self.game_time = GAME_TIME
 
     def start_game(self):
         self.start_game_button.pack_forget()
+        self.difficulty_frame.pack_forget()
         self.background_canvas.pack_forget()
         self.game_over = False
         self.game_paused = False
         self.next_shape = None
         self.field = [[WHITE_CELL for _ in range(FIELD_WIDTH)] for _ in range(FIELD_HEIGHT)]
         self.score = 0
+        self.change_difficulty(self.difficulty)
         self.start_time = time.time()
-
-
 
     def init_game(self):
         self.new_shape()
@@ -84,9 +98,9 @@ class Tetris:
             self.game_over = True
             self.save_high_score()
             self.time_up_sound.play()
-            self.canvas.create_text(FIELD_WIDTH * CELL_SIZE / 2, FIELD_HEIGHT * CELL_SIZE / 2, text="Время закончилось!",
+            self.canvas.create_text(FIELD_WIDTH * CELL_SIZE / 2, FIELD_HEIGHT * CELL_SIZE / 2,
+                                    text="Время закончилось!",
                                     fill="red", font=("Helvetica", 25))
-
 
     def start_game(self, event=None):
         self.start_game_button.pack_forget()
@@ -186,6 +200,19 @@ class Tetris:
         except FileNotFoundError:
             self.max_score_label = tk.Label(self.frame, text="Файл рекордов не найден", font=("Helvetica", 15))
             self.max_score_label.pack(side=tk.TOP, pady=10)
+
+    def set_difficulty(self, level):
+        self.difficulty = level
+        self.change_difficulty(level)
+        self.easy_button.config(relief=tk.RAISED)
+        self.medium_button.config(relief=tk.RAISED)
+        self.hard_button.config(relief=tk.RAISED)
+        if level == "easy":
+            self.easy_button.config(relief=tk.SUNKEN)
+        elif level == "medium":
+            self.medium_button.config(relief=tk.SUNKEN)
+        elif level == "hard":
+            self.hard_button.config(relief=tk.SUNKEN)
 
     def restart_game(self):
         self.canvas.delete("all")
@@ -302,7 +329,6 @@ class Tetris:
                     self.field[self.shape_position[0] + i][self.shape_position[1] + j] = self.color
         self.clear_lines()
 
-
     def clear_lines(self):
         cleared_lines = 0
         lines_deleted = True
@@ -340,7 +366,7 @@ class Tetris:
         self.hint_label.pack(side=tk.BOTTOM, pady=10)
         self.update_hint()
 
-    def play_background_music(self,volume=0.03):
+    def play_background_music(self, volume=0.03):
         pygame.mixer.init()
         pygame.mixer.music.load("sound/background_music.wav")
         pygame.mixer.music.set_volume(0.03)
@@ -371,7 +397,7 @@ class Tetris:
         if not self.game_over and not self.game_paused:
             self.move_down()
             self.update_remaining_time()
-            self.move_down_id = self.master.after(500, self.move_down_auto)
+            self.move_down_id = self.master.after(self.speed, self.move_down_auto)
 
     def update_preview(self):
         self.preview_canvas.delete("all")
