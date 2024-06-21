@@ -7,7 +7,7 @@ import pygame
 from datetime import datetime
 
 # Константы
-GAME_TIME = 10   #В секундах
+GAME_TIME = 10   # В секундах
 FIELD_WIDTH = 10
 FIELD_HEIGHT = 20
 CELL_SIZE = 30
